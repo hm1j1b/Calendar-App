@@ -2,12 +2,18 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
-public class LaunchPage extends JFrame implements ActionListener{  
+public class LaunchPage extends JFrame implements ActionListener{
     JPanel headerPanel;
-    JLabel headerLabel;
+    JPanel selectionPanel;
+    JPanel buttonGroup;
+    JPanel controlPanel;
+    JPanel navButton;
     JPanel gridPanel;
     JButton buttonPrev;
     JButton buttonNext;
+    JComboBox<String> buttonMonth;
+    JComboBox<String> buttonYear;
+    JButton addEvent;
     JButton dayButtons;
     ImageIcon icon;
 
@@ -17,31 +23,61 @@ public class LaunchPage extends JFrame implements ActionListener{
         icon = new ImageIcon("src/resources/icon.png");
         this.setIconImage(icon.getImage());
         this.setTitle("Calendar App");
-        
-        // Header setup
+
+        // Header Panel setup
         headerPanel = new JPanel();    
-        headerPanel.setPreferredSize(new Dimension(400, 100));
-        headerPanel.setBackground(Color.BLUE);
+        headerPanel.setPreferredSize(new Dimension(800, 80));
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10,10));
         headerPanel.setLayout(new BorderLayout());
+
+        // Selection Panel setup
+        selectionPanel = new JPanel(new BorderLayout());
+        selectionPanel.setPreferredSize(new Dimension(200, 100));
+        selectionPanel.setOpaque(false);
         
-        // Header Label
+        // Button Group Panel setup
+        buttonGroup = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+
+        // Button for Month
+        buttonMonth = new JComboBox<>(new String[]{"January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"});
+        buttonMonth.setFocusable(false);
+        buttonGroup.setOpaque(false);
+        buttonGroup.add(buttonMonth);
+
+        // Button for Year
+        buttonYear = new JComboBox<>(new String[]{"2022", "2023", "2024", "2025"});
+        buttonYear.setFocusable(false); 
+        buttonGroup.add(buttonYear);
+        
+        selectionPanel.add(buttonGroup, BorderLayout.SOUTH);
+        headerPanel.add(selectionPanel, BorderLayout.WEST);
+
+        // Control Panel setup
+        controlPanel = new JPanel(new BorderLayout());
+        controlPanel.setOpaque(false);
+        
+        // Navigation Buttons Panel setup
+        navButton = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        navButton.setOpaque(false);
+
+        // Add Event Button
+        addEvent = new JButton("Event");
+        addEvent.setFocusable(false);
+        navButton.add(addEvent);
+        
+        // Previous Buttons
         buttonPrev = new JButton("<");
         buttonPrev.setFocusable(false);
-    
-
-        headerLabel = new JLabel("Month Year");
-        headerLabel.setForeground(Color.WHITE);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        headerLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        headerLabel.setVerticalAlignment(SwingConstants.CENTER);
-
+        navButton.add(buttonPrev);
+        
+        // Next Buttons
         buttonNext = new JButton(">");
         buttonNext.setFocusable(false);
-
-        headerPanel.add(headerLabel);
-        headerPanel.add(buttonPrev, BorderLayout.WEST);
-        headerPanel.add(buttonNext, BorderLayout.EAST);
+        navButton.add(buttonNext);
         
+        controlPanel.add(navButton, BorderLayout.SOUTH);
+        headerPanel.add(controlPanel, BorderLayout.EAST);
+
         // Grid Setup
         gridPanel = new JPanel();
         gridPanel.setPreferredSize(new Dimension(400, 400));
