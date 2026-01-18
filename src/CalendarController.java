@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class CalendarController {
-    
+
     // State Management
     public enum ViewMode { CALENDAR, LIST }
     public enum TimeScale { DAY, WEEK, MONTH }
@@ -12,7 +12,7 @@ public class CalendarController {
     private ViewMode currentMode = ViewMode.CALENDAR;
     private TimeScale currentScale = TimeScale.MONTH;
     private LocalDate referenceDate = LocalDate.now();
-    
+
     private List<Event> events = new ArrayList<>();
     private FileHandler fileHandler = new FileHandler();
 
@@ -27,10 +27,10 @@ public class CalendarController {
     // --- State Getters/Setters ---
     public ViewMode getMode() { return currentMode; }
     public void setMode(ViewMode mode) { this.currentMode = mode; }
-    
+
     public TimeScale getScale() { return currentScale; }
     public void setScale(TimeScale scale) { this.currentScale = scale; }
-    
+
     public LocalDate getReferenceDate() { return referenceDate; }
     public void setReferenceDate(LocalDate date) { this.referenceDate = date; }
 
@@ -64,10 +64,10 @@ public class CalendarController {
     }
 
     private void save() {
-        try { 
-            fileHandler.saveEvents(events); 
-        } catch (Exception e) { 
-            e.printStackTrace(); 
+        try {
+            fileHandler.saveEvents(events);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -100,11 +100,11 @@ public class CalendarController {
 
     private boolean occursInRange(Event e, LocalDate start, LocalDate end) {
         // Check original occurrence
-        if (!e.getStart().toLocalDate().isBefore(start) && 
-            !e.getStart().toLocalDate().isAfter(end)) {
+        if (!e.getStart().toLocalDate().isBefore(start) &&
+                !e.getStart().toLocalDate().isAfter(end)) {
             return true;
         }
-        
+
         // Check recurring occurrences
         if (!"NONE".equalsIgnoreCase(e.getRecurType())) {
             for (int i = 1; i <= e.getRecurCount(); i++) {
@@ -118,21 +118,64 @@ public class CalendarController {
     }
 
     // --- Search Logic ---
-    public List<Event> searchEvents(String query) {
+    public List<SearchMatch> searchEvents(String query) {
         if (query == null || query.trim().isEmpty()) return new ArrayList<>();
-        return events.stream()
-                .filter(ev -> ev.getTitle().toLowerCase().contains(query.toLowerCase()) ||
-                ev.getDescription().toLowerCase().contains(query.toLowerCase()))
-                .collect(Collectors.toList());
+        List<SearchMatch> results = new ArrayList<>();
+        String lowQuery = query.toLowerCase();
+
+        for (Event e : events) {
+            if (e.getTitle().toLowerCase().contains(lowQuery) ||
+                    e.getDescription().toLowerCase().contains(lowQuery)) {
+
+                // Add original occurrence
+                results.add(new SearchMatch(e.getStart().toLocalDate(), e));
+
+                // Add all recurring occurrences
+                if (!"NONE".equalsIgnoreCase(e.getRecurType())) {
+                    for (int i = 1; i <= e.getRecurCount(); i++) {
+                        results.add(new SearchMatch(e.getOccurrence(i).toLocalDate(), e));
+                    }
+                }
+            }
+        }
+        return results;
     }
 
-    public List<Event> searchEventsByDate(LocalDate start, LocalDate end) {
-        return events.stream()
-                .filter(e -> occursInRange(e, start, end))
-                .sorted(Comparator.comparing(Event::getStart))
-                .collect(Collectors.toList());
+    public List<SearchMatch> searchEventsByDate(LocalDate start, LocalDate end) {
+        List<SearchMatch> results = new ArrayList<>();
+
+        for (Event e : events) {
+            LocalDate originalDate = e.getStart().toLocalDate();
+            if (!originalDate.isBefore(start) && !originalDate.isAfter(end)) {
+                results.add(new SearchMatch(originalDate, e));
+            }
+
+            if (!"NONE".equalsIgnoreCase(e.getRecurType())) {
+                for (int i = 1; i <= e.getRecurCount(); i++) {
+                    LocalDate occurrenceDate = e.getOccurrence(i).toLocalDate();
+                    // Check if this specific occurrence falls within the search range
+                    if (!occurrenceDate.isBefore(start) && !occurrenceDate.isAfter(end)) {
+                        results.add(new SearchMatch(occurrenceDate, e));
+                    }
+                }
+            }
+        }
+
+        // Optional: Sort results by date
+        results.sort(Comparator.comparing(match -> match.date));
+        return results;
     }
 
+    // Fix Search Date for Recurring Event
+    public static class SearchMatch {
+        public final LocalDate date;
+        public final Event event;
+
+        public SearchMatch(LocalDate date, Event event) {
+            this.date = date;
+            this.event = event;
+        }
+    }
     // --- Conflict Logic ---
     public boolean hasConflict(Event e) {
         List<Event> sameDay = getEventsOnDate(e.getStart().toLocalDate());
@@ -161,17 +204,17 @@ public class CalendarController {
         fileHandler.restore(filename, append);
         events = fileHandler.loadEvents();
     }
-    
+
     // Overloaded version for backward compatibility
     public void performRestore(String filename) throws Exception {
         performRestore(filename, false);
     }
-    
+
     // --- Notification Logic ---
     public List<Event> getUpcomingEvents(int hoursAhead) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime future = now.plusHours(hoursAhead);
-        
+
         return events.stream()
                 .filter(e -> {
                     // Check if event starts in the next X hours
@@ -192,29 +235,29 @@ public class CalendarController {
                 .sorted(Comparator.comparing(Event::getStart))
                 .collect(Collectors.toList());
     }
-    
+
     // --- Week List View (CLI-style format) ---
     public String generateWeekListView(LocalDate weekStart) {
         LocalDate weekEnd = weekStart.plusDays(6);
         StringBuilder sb = new StringBuilder();
-        
+
         sb.append("=== Week of ").append(weekStart).append(" ===\n\n");
-        
+
         String[] dayNames = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-        
+
         for (int i = 0; i < 7; i++) {
             LocalDate day = weekStart.plusDays(i);
             List<Event> dayEvents = getEventsOnDate(day);
-            
+
             sb.append(dayNames[i]).append(" ").append(day).append(": ");
-            
+
             if (dayEvents.isEmpty()) {
                 sb.append("No events\n");
             } else {
                 sb.append("\n");
                 for (Event e : dayEvents) {
                     sb.append("  • ").append(e.getStart().toLocalTime())
-                    .append(" - ").append(e.getTitle());
+                            .append(" - ").append(e.getTitle());
                     if (!"NONE".equals(e.getRecurType())) {
                         sb.append(" [").append(e.getRecurType()).append("]");
                     }
@@ -222,7 +265,7 @@ public class CalendarController {
                 }
             }
         }
-        
+
         return sb.toString();
     }
 }
