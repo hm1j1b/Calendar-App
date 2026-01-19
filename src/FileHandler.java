@@ -22,8 +22,8 @@ public class FileHandler {
                     e.getId(),
                     escapeCSV(e.getTitle()),
                     escapeCSV(e.getDescription()),
-                    e.getStart(),
-                    e.getEnd()
+                    e.getStart().format(Event.FMT), // <--- NEW: Forces correct format
+                    e.getEnd().format(Event.FMT)    // <--- NEW: Forces correct format
                 );
             }
         }

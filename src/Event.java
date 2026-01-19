@@ -12,7 +12,7 @@ public class Event {
     private int recurCount;   // How many times it repeats
 
     // Date formatter for CSV
-    public static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    public static final DateTimeFormatter FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     // Full Constructor
     public Event(int id, String title, String description, LocalDateTime start, LocalDateTime end, String recurType, int recurCount) {
